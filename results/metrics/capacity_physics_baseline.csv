@@ -1,0 +1,2 @@
+model,normalization,r2,mae,rmse,correlation
+Physics capacity baseline,fully discharged mass,1.0,4.951894391247244e-09,5.3621568413412535e-09,1.0

@@ -1,0 +1,80 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Secrets
+.env
+.env.*
+*.env
+secrets/
+*api_key*
+*apikey*
+
+# Raw crystal structures
+data/raw/structures/
+data/raw/structures_charge/
+data/raw/structures_discharge/
+
+# Intermediate data
+data/interim/
+
+# Graph datasets and caches
+data/processed/graphs/
+*.pt
+*.pth
+
+# Model binaries
+models/*.pkl
+models/*.joblib
+
+# Keep final voltage model
+!models/xgboost_voltage_final.pkl
+
+# Quantum ESPRESSO temporary / restart data
+dft/**/tmp*/
+dft/**/*.save/
+dft/**/*.wfc*
+dft/**/*.mix*
+dft/**/*.igk*
+dft/**/*.xml
+
+# QE output files ignored by default
+dft/**/*.out
+
+# Keep representative DFT outputs
+!dft/co_po4/relax/CoPO4_vc_relax.out
+!dft/co_po4/relax/CoPO4_final_scf.out
+!dft/li_copo4/relax/LiCoPO4_vc_relax.out
+!dft/li_copo4/relax/LiCoPO4_final_scf.out
+!dft/li_metal/relax/Li_vc_relax.out
+!dft/li_metal/kpoint/Li_k14.out
+
+# Local pseudopotentials
+dft/pseudo/
+*.upf
+*.UPF
+
+# Archives
+*.tar
+*.tar.gz
+*.zip
+
+# Temporary files
+.cache/
+*.tmp
+*.log

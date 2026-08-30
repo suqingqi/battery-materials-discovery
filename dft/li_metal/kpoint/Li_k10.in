@@ -1,0 +1,37 @@
+&CONTROL
+  calculation = 'scf',
+  prefix = 'Li_k10',
+  pseudo_dir = '/Users/qiqi/battery/dft/pseudo',
+  outdir = './tmp_k10',
+/
+
+&SYSTEM
+  ibrav = 0,
+  nat = 1,
+  ntyp = 1,
+  ecutwfc = 70,
+  ecutrho = 540,
+  occupations = 'smearing',
+  smearing = 'mv',
+  degauss = 0.01,
+/
+
+&ELECTRONS
+  conv_thr = 1.0d-10,
+  mixing_beta = 0.3,
+  electron_maxstep = 200,
+/
+
+ATOMIC_SPECIES
+Li 6.941000 Li.us.pbe.z_3.uspp.gbrv.v1.4.upf
+
+CELL_PARAMETERS (angstrom)
+ 1.7185774451   1.7185774451   1.7185774451
+-1.7185774451   1.7185774451   1.7185774451
+-1.7185774451  -1.7185774451   1.7185774451
+
+ATOMIC_POSITIONS (crystal)
+Li 0.0 0.0 0.0
+
+K_POINTS automatic
+10 10 10 0 0 0

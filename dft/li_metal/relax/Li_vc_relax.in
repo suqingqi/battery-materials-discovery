@@ -1,0 +1,46 @@
+&CONTROL
+  calculation = 'vc-relax',
+  prefix = 'Li',
+  pseudo_dir = '/Users/qiqi/battery/dft/pseudo',
+  outdir = './tmp_relax',
+  verbosity = 'high',
+  forc_conv_thr = 1.0d-4,
+  nstep = 50,
+/
+
+&SYSTEM
+  ibrav = 3,
+  celldm(1) = 6.60,
+  nat = 1,
+  ntyp = 1,
+  ecutwfc = 70,
+  ecutrho = 540,
+  occupations = 'smearing',
+  smearing = 'mv',
+  degauss = 0.01,
+/
+
+&ELECTRONS
+  conv_thr = 1.0d-10,
+  mixing_beta = 0.3,
+  electron_maxstep = 200,
+/
+
+&IONS
+  ion_dynamics = 'bfgs',
+/
+
+&CELL
+  cell_dynamics = 'bfgs',
+  press_conv_thr = 0.5,
+  cell_dofree = 'ibrav',
+/
+
+ATOMIC_SPECIES
+Li 6.941000 Li.us.pbe.z_3.uspp.gbrv.v1.4.upf
+
+ATOMIC_POSITIONS (crystal)
+Li 0.0 0.0 0.0
+
+K_POINTS automatic
+12 12 12 0 0 0
