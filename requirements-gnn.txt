@@ -1,0 +1,6 @@
+numpy==2.4.6
+pandas==2.3.3
+scikit-learn==1.9.0
+pymatgen==2026.5.4
+torch==2.13.0
+torch-geometric==2.8.0.post1

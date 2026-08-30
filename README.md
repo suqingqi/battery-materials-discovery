@@ -62,6 +62,138 @@ Quantum ESPRESSO Validation
 
 ---
 
+## Reproducibility & Quick Start
+
+### Environment
+
+Tested with:
+
+```text
+Python 3.11
+```
+
+主 Machine Learning / Materials Informatics 环境：
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+主要用于：
+
+```text
+Data processing
+Matminer descriptors
+XGBoost
+SHAP
+Physics baselines
+Pareto screening
+Uncertainty analysis
+Materials Project API
+```
+
+GNN experiments 建议使用独立环境：
+
+```bash
+python -m venv .venv-gnn
+source .venv-gnn/bin/activate
+pip install -r requirements-gnn.txt
+```
+
+主要用于：
+
+```text
+PyTorch
+PyTorch Geometric
+Crystal graph experiments
+```
+
+本项目将 ML 与 GNN 环境分开，以减少不同 OpenMP / binary dependency 之间的潜在冲突。
+
+### Materials Project API
+
+下载数据和 endpoint structures 需要 Materials Project API key。
+
+```bash
+export MP_API_KEY="YOUR_MATERIALS_PROJECT_API_KEY"
+```
+
+数据下载：
+
+```bash
+python src/01_download_battery_data.py
+```
+
+Endpoint structures：
+
+```bash
+python src/20_download_endpoint_structures.py
+```
+
+API key 通过环境变量读取，不写入 repository。
+
+### Main Pipeline
+
+```text
+01–06   Data acquisition, cleaning and descriptors
+07–09   XGBoost baselines and framework-aware validation
+10–14   GNN exploratory experiments
+15–17   Reaction features, ablation and SHAP
+18      Capacity physics baseline
+19–22   Endpoint structure / volume physics analysis
+23–24   Pareto screening and uncertainty filtering
+25–29   DFT candidate audit and validation
+30      Result visualization
+```
+
+主要输出：
+
+```text
+results/metrics/
+results/figures/
+```
+
+### Quantum ESPRESSO
+
+DFT validation 使用：
+
+```text
+Quantum ESPRESSO 7.5
+PBE
+SSSP Efficiency pseudopotentials
+```
+
+本仓库不直接分发 pseudopotential files。
+
+请将以下 pseudopotentials 放入：
+
+```text
+dft/pseudo/
+```
+
+```text
+Co.nc.pbe.z_17.oncvpsp4.spms.v1.upf
+Li.us.pbe.z_3.uspp.gbrv.v1.4.upf
+O.paw.pbe.z_6.ld1.psl.v0.1.upf
+P.us.pbe.z_5.ld1.psl.v1.0.0-high.upf
+```
+
+QE inputs 使用相对 `pseudo_dir`。建议进入对应 input 所在目录运行，例如：
+
+```bash
+cd dft/co_po4/relax
+
+mpirun -np 4 pw.x \
+-in CoPO4_final_scf.in \
+> CoPO4_final_scf.out
+```
+
+仓库只保留 representative QE inputs 和关键 outputs；wavefunction、restart files 和完整 pseudopotential library 不纳入版本控制。
+
+---
+
+
 ## 4. Dataset
 
 数据来源：**Materials Project Li insertion electrode dataset**
