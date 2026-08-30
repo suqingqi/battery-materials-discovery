@@ -1,7 +1,7 @@
 &CONTROL
   calculation = 'scf',
   prefix = 'Li_k14',
-  pseudo_dir = '/Users/qiqi/battery/dft/pseudo',
+  pseudo_dir = '../../pseudo',
   outdir = './tmp_k14',
 /
 

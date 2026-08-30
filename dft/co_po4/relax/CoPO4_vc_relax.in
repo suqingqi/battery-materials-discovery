@@ -1,7 +1,7 @@
 &CONTROL
   calculation = 'vc-relax',
   prefix = 'CoPO4',
-  pseudo_dir = '/Users/qiqi/battery/dft/pseudo',
+  pseudo_dir = '../../pseudo',
   outdir = './tmp_relax',
   verbosity = 'high',
   forc_conv_thr = 1.0d-3,

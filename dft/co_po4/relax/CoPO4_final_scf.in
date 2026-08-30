@@ -1,7 +1,7 @@
 &CONTROL
   calculation = 'scf',
   prefix = 'CoPO4',
-  pseudo_dir = '/Users/qiqi/battery/dft/pseudo',
+  pseudo_dir = '../../pseudo',
   outdir = './tmp_final',
   verbosity = 'high',
 /
