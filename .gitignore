@@ -78,3 +78,6 @@ dft/pseudo/
 .cache/
 *.tmp
 *.log
+
+# ASE structure-conversion demo output
+results/ase_bridge/

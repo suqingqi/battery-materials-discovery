@@ -9,3 +9,4 @@ pymatgen==2026.5.4
 matminer==0.10.1
 mp-api==0.46.5
 joblib==1.5.3
+ase==3.29.0

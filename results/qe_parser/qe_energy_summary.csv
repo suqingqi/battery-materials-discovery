@@ -1,0 +1,4 @@
+system,formula,n_atoms,energy_eV,volume_A3,job_done,output_file
+CoPO4,Co4O16P4,24,-25258.346012285972,383.30776721420807,True,/Users/qiqi/battery/dft/co_po4/relax/CoPO4_final_scf.out
+LiCoPO4,Co4Li4O16P4,28,-26060.542439207682,344.4061983413282,True,/Users/qiqi/battery/dft/li_copo4/relax/LiCoPO4_final_scf.out
+Li_metal,Li,1,-196.9010280629796,20.303306596791142,True,/Users/qiqi/battery/dft/li_metal/kpoint/Li_k14.out

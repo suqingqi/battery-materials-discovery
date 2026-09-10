@@ -1,30 +1,50 @@
 # Battery Materials Discovery for Li-ion Cathodes
 
-> 基于 **Materials Project** 数据构建的锂离子电池正极材料筛选项目。  
-> 核心路线：**Data → Leakage-aware ML → Physics → Pareto → Uncertainty → DFT**
-
-## 1. 项目目标
-
-本项目不是单纯做一个“材料性能预测模型”，而是尝试解决一个更接近真实材料研发的问题：
-
-> **如何从上千个 Li insertion electrode 候选中，综合考虑 Voltage、Capacity、Volume Change 和 Stability，逐步缩小候选空间，并选出值得进一步计算或实验验证的材料？**
-
-项目最终从 **1858 条建模数据**出发，经 **Framework-aware validation、Reaction-aware feature engineering、Physics-based property analysis、Pareto Optimization、Uncertainty filtering**，得到 **4 个 DFT shortlist**，并对排名最高的 **CoPO₄ → LiCoPO₄** 完成 **Quantum ESPRESSO** 独立 DFT 验证。
+> 基于 **Materials Project + Machine Learning + Materials Physics + DFT** 的锂离子电池正极材料筛选项目。
+> 核心路线：**Data → Leakage-aware ML → Physics → Pareto → Uncertainty → DFT → Automated Parsing**
 
 ---
 
-## 2. 项目亮点
+## 1. Project Overview
 
-- 使用 **Framework GroupKFold** 代替普通 Random Split，避免同类 framework 带来的 validation leakage
-- 在 composition descriptors 之外引入 **Reaction Features**
-- 不强行对所有 target 使用 Machine Learning，而是根据 property physics 选择方法
-- 将 **Pareto Optimization + empirical uncertainty + framework deduplication** 用于候选筛选
-- 从数据库级筛选推进到 **candidate-level DFT validation**
-- 对 GNN、ML、Physics、DFT 的适用边界进行方法学比较，而不是简单堆模型
+本项目关注一个更接近真实材料研发的问题：
+
+> **如何从上千个锂离子电池正极候选中，综合 Voltage、Capacity、Volume Change 和 Stability，逐步筛选出值得进一步计算或实验验证的材料？**
+
+项目从 Materials Project 的 Li insertion electrode 数据出发，结合：
+
+- Framework-aware validation
+- XGBoost + SHAP
+- Reaction-aware features
+- Property-specific physics models
+- Pareto multi-objective screening
+- Local empirical uncertainty
+- Quantum ESPRESSO DFT
+- pymatgen + ASE automated workflow
+
+最终从：
+
+```text
+1858 modeling records
+```
+
+筛选至：
+
+```text
+4 DFT shortlist candidates
+```
+
+并对排名最高的：
+
+```text
+CoPO4 → LiCoPO4
+```
+
+完成独立 DFT 验证。
 
 ---
 
-## 3. Overall Workflow
+## 2. Overall Workflow
 
 ```text
 Materials Project
@@ -33,197 +53,60 @@ Data Cleaning & Domain Definition
         ↓
 Composition Descriptors
         ↓
-Random CV vs Framework GroupKFold
+Framework GroupKFold
         ↓
-Reaction-aware Feature Engineering
+Reaction-aware Voltage Modeling
         ↓
-Voltage Modeling + SHAP
+XGBoost + SHAP
         ↓
 Capacity Physics
         ↓
-Endpoint Volume Physics
+Endpoint Structure / Volume Physics
         ↓
 Engineering Constraints
         ↓
 Pareto Optimization
         ↓
-Framework Deduplication
-        ↓
-Local Empirical Uncertainty
+Uncertainty Filtering
         ↓
 DFT Shortlist
         ↓
-Quantum ESPRESSO Validation
+Quantum ESPRESSO
+        ↓
+ASE Automated Output Parsing
+        ↓
+Battery Voltage Validation
 ```
 
-核心原则：
+核心思路：
 
-> **Model complexity should follow the physics of the target property.**
+> **ML where ML is useful, physics where physics is sufficient, DFT where higher-fidelity validation is needed.**
 
 ---
 
-## Reproducibility & Quick Start
+## 3. Dataset & Validation
 
-### Environment
-
-Tested with:
+数据来源：
 
 ```text
-Python 3.11
+Materials Project
+Li insertion electrode dataset
 ```
 
-主 Machine Learning / Materials Informatics 环境：
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-主要用于：
-
-```text
-Data processing
-Matminer descriptors
-XGBoost
-SHAP
-Physics baselines
-Pareto screening
-Uncertainty analysis
-Materials Project API
-```
-
-GNN experiments 建议使用独立环境：
-
-```bash
-python -m venv .venv-gnn
-source .venv-gnn/bin/activate
-pip install -r requirements-gnn.txt
-```
-
-主要用于：
-
-```text
-PyTorch
-PyTorch Geometric
-Crystal graph experiments
-```
-
-本项目将 ML 与 GNN 环境分开，以减少不同 OpenMP / binary dependency 之间的潜在冲突。
-
-### Materials Project API
-
-下载数据和 endpoint structures 需要 Materials Project API key。
-
-```bash
-export MP_API_KEY="YOUR_MATERIALS_PROJECT_API_KEY"
-```
-
-数据下载：
-
-```bash
-python src/01_download_battery_data.py
-```
-
-Endpoint structures：
-
-```bash
-python src/20_download_endpoint_structures.py
-```
-
-API key 通过环境变量读取，不写入 repository。
-
-### Main Pipeline
-
-```text
-01–06   Data acquisition, cleaning and descriptors
-07–09   XGBoost baselines and framework-aware validation
-10–14   GNN exploratory experiments
-15–17   Reaction features, ablation and SHAP
-18      Capacity physics baseline
-19–22   Endpoint structure / volume physics analysis
-23–24   Pareto screening and uncertainty filtering
-25–29   DFT candidate audit and validation
-30      Result visualization
-```
-
-主要输出：
-
-```text
-results/metrics/
-results/figures/
-```
-
-### Quantum ESPRESSO
-
-DFT validation 使用：
-
-```text
-Quantum ESPRESSO 7.5
-PBE
-SSSP Efficiency pseudopotentials
-```
-
-本仓库不直接分发 pseudopotential files。
-
-请将以下 pseudopotentials 放入：
-
-```text
-dft/pseudo/
-```
-
-```text
-Co.nc.pbe.z_17.oncvpsp4.spms.v1.upf
-Li.us.pbe.z_3.uspp.gbrv.v1.4.upf
-O.paw.pbe.z_6.ld1.psl.v0.1.upf
-P.us.pbe.z_5.ld1.psl.v1.0.0-high.upf
-```
-
-QE inputs 使用相对 `pseudo_dir`。建议进入对应 input 所在目录运行，例如：
-
-```bash
-cd dft/co_po4/relax
-
-mpirun -np 4 pw.x \
--in CoPO4_final_scf.in \
-> CoPO4_final_scf.out
-```
-
-仓库只保留 representative QE inputs 和关键 outputs；wavefunction、restart files 和完整 pseudopotential library 不纳入版本控制。
-
----
-
-
-## 4. Dataset
-
-数据来源：**Materials Project Li insertion electrode dataset**
-
-初始下载：
+初始数据：
 
 ```text
 2774 battery records
 ```
 
-主要字段包括：
-
-- `average_voltage`
-- `capacity_grav`
-- `max_delta_volume`
-- `max_stability`
-- `formula_charge`
-- `formula_discharge`
-- `framework_formula`
-- `id_charge`
-- `id_discharge`
-
-经过异常值过滤、材料体系限制和 Stability 筛选后，最终建模数据为：
+清洗后：
 
 ```text
 1858 modeling records
 1019 unique frameworks
 ```
 
-主要研究体系：
+主要体系：
 
 ```text
 Transition metals:
@@ -233,51 +116,44 @@ Anions:
 O / P / F / S
 ```
 
----
+### Why Framework GroupKFold?
 
-## 5. Validation Strategy：为什么不能只用 Random Split
+材料数据库中，相似 framework 可能同时出现在训练集和验证集。
 
-材料数据库中常存在相同或高度相似的 structural framework。
-
-如果直接 Random Split，相似材料可能同时进入 Train 和 Test，从而高估模型对 unseen materials 的泛化能力。
-
-因此比较：
-
-- **Random 5-fold CV**
-- **Framework GroupKFold**
-
-![Random CV vs Framework GroupKFold](results/figures/random_vs_groupcv.png)
-
-结果：
+Random Split 容易高估模型对真正 unseen material family 的泛化能力，因此项目比较：
 
 | Validation | Mean R² | MAE |
 |---|---:|---:|
 | Random 5-fold CV | 0.5949 | 0.3667 V |
 | Framework GroupKFold | 0.4935 | 0.4185 V |
 
-Generalization gap：
+因此正式 Voltage benchmark 使用：
 
 ```text
-ΔR² ≈ 0.1014
+Framework GroupKFold
 ```
 
-因此后续正式 Voltage benchmark 均采用：
+这一部分的核心结论是：
 
-**Framework GroupKFold**
-
-### 结论
-
-> 对材料体系做 generalization evaluation 时，**数据划分方式可能比更换一个更复杂的模型更重要**。
+> **对材料数据来说，合理的数据划分方式有时比换一个更复杂的模型更重要。**
 
 ---
 
-## 6. Voltage Prediction
+## 4. Voltage Prediction
 
-### 6.1 Composition Baseline
+使用 `matminer` 生成约：
 
-使用 `matminer` 生成约 **142 个 composition descriptors**，并使用 **XGBoost Regressor** 建立 Voltage baseline。
+```text
+142 composition descriptors
+```
 
-Framework GroupKFold：
+并建立：
+
+```text
+XGBoost Regressor
+```
+
+Composition baseline：
 
 ```text
 R²   = 0.4935
@@ -285,13 +161,7 @@ MAE  = 0.4185 V
 RMSE = 0.5582 V
 ```
 
-Composition 可以解释部分 Voltage 差异，但 Average Voltage 本质上属于 reaction-dependent property，仅使用静态 composition 信息仍不充分。
-
----
-
-### 6.2 Reaction-aware Feature Engineering
-
-进一步解析 charge / discharge composition，并构造：
+由于 Average Voltage 是 charge → discharge reaction-dependent property，进一步加入：
 
 ```text
 normalized_delta_li
@@ -299,56 +169,39 @@ relative_delta_li
 num_steps
 ```
 
-其中：
+Feature ablation：
 
-```text
-corr(relative_delta_li, capacity_grav) ≈ 0.937
-```
-
-说明 Li 嵌入 / 脱出的化学计量变化包含显著 electrochemical information。
-
----
-
-### 6.3 Feature Ablation
-
-使用相同 Framework GroupKFold 比较三组 feature set：
-
-![Voltage Feature Ablation](results/figures/voltage_feature_ablation.png)
-
-| Feature Set | Mean R² | MAE |
+| Features | Mean R² | MAE |
 |---|---:|---:|
 | Composition only | 0.4935 | 0.4185 V |
 | Reaction only | 0.1026 | 0.5990 V |
 | Composition + Reaction | **0.5302** | **0.3966 V** |
 
-加入 Reaction Features 后：
-
-```text
-ΔR² = +0.0367
-MAE = 0.4185 → 0.3966 V
-```
-
-### 结论
-
-> Reaction Features 不能单独替代 composition，但能够补充静态 composition descriptors 中缺失的反应信息。
+说明 Reaction Features 不能替代 composition，但能够补充反应信息。
 
 ---
 
-## 7. Model Interpretation with SHAP
+## 5. Model Interpretation with SHAP
 
 最终 Voltage model 使用：
 
-**XGBoost + SHAP**
+```text
+XGBoost
++
+Composition Descriptors
++
+Reaction Features
+```
 
-![Voltage SHAP Top Features](results/figures/voltage_shap_top_features.png)
+SHAP top features 包括：
 
-Top features 包括：
-
-- `MagpieData mean Column`
-- `relative_delta_li`
-- `MagpieData mean NdUnfilled`
-- `MagpieData mean GSvolume_pa`
-- `5-norm`
+```text
+MagpieData mean Column
+relative_delta_li
+MagpieData mean NdUnfilled
+MagpieData mean GSvolume_pa
+5-norm
+```
 
 其中：
 
@@ -356,123 +209,66 @@ Top features 包括：
 relative_delta_li
 ```
 
-在 mean absolute SHAP 中排名 **#2**。
+在 mean absolute SHAP 中排名：
 
-这与 Feature Ablation 结果一致：
+```text
+#2
+```
 
-> Voltage prediction 不仅受到元素组成影响，也受到 charge/discharge reaction extent 的显著影响。
+说明 charge/discharge reaction extent 对模型预测具有重要贡献。
 
-说明：**SHAP 是 model attribution，不等同于 causal relationship。**
+需要强调：
+
+> **SHAP reflects model attribution, not causality.**
 
 ---
 
-## 8. GNN Exploration：为什么没有把 GNN 作为最终 Voltage Model
+## 6. Why Not Use ML for Everything?
 
-项目中也构建了基于 crystal graph 的 Graph Neural Network。
+项目没有对所有 target 强行使用 Machine Learning。
 
-Graph representation 包括：
+最终策略：
 
-```text
-Atomic features
-Atomic number
-Crystal connectivity
-Interatomic distance
-RBF distance encoding
-```
+| Property | Method | Reason |
+|---|---|---|
+| Voltage | XGBoost + Reaction Features | Reaction-dependent |
+| Capacity | Physics Equation | Determined mainly by stoichiometry |
+| Volume Change | Endpoint Structure Physics | Strong structure dependence |
+| Stability | Screening Constraint | Used for filtering |
 
-在严格 framework-separated 的单个 outer fold exploratory test 中：
+### Capacity
 
-```text
-Distance-aware GNN
-R²  ≈ 0.37
-MAE ≈ 0.45 V
-```
-
-表现低于 Composition + Reaction XGBoost。
-
-这并不说明 GNN 本身无效，而是说明：
-
-> **Average Voltage 是 charge → discharge reaction property，仅输入单一 host crystal structure 无法完整描述整个电化学反应。**
-
-因此项目没有继续盲目增加 GNN depth，而是回到 reaction representation 和 property physics。
-
----
-
-## 9. Capacity：从 ML 回到 Physics
-
-最初使用 Composition descriptors 预测 Capacity：
+最初 composition ML：
 
 ```text
-GroupKFold R² ≈ 0.18
-MAE ≈ 41 mAh/g
+R² ≈ 0.18
 ```
 
-进一步分析发现：
-
-```text
-corr(relative_delta_li, capacity_grav) ≈ 0.937
-```
-
-于是回到 Capacity 的物理定义：
+但理论容量可由：
 
 ```text
 Q = nF / (3.6M)
 ```
 
-其中：
+直接计算。
+
+采用正确的 discharged-state molar mass 后：
 
 ```text
-n = transferred Li / electrons
-F = Faraday constant
-M = discharged electrode molar mass
+R² ≈ 1.000
 ```
 
-使用正确的 discharged-state molar mass 后：
+因此无需用 ML 重复拟合明确的物理关系。
 
-```text
-R²   = 1.000
-MAE  ≈ 0
-RMSE ≈ 0
-```
+### Volume Change
 
-### 结论
-
-> 如果 property 可以通过明确物理关系直接计算，就没有必要为了使用 ML 而强行建模。
-
-因此 Capacity 最终采用：
-
-**Physics Equation**
-
-而不是 Machine Learning。
-
----
-
-## 10. Volume Change：Structure Matters
-
-Composition-based ML 对 `max_delta_volume` 的预测能力较弱：
+Composition model：
 
 ```text
 R² ≈ 0.12
 ```
 
-因此进一步下载：
-
-- Charge endpoint structures
-- Discharge endpoint structures
-
-得到：
-
-```text
-1855 complete structure pairs
-```
-
-基于 endpoint crystal volume 计算：
-
-```text
-|ΔV| / V
-```
-
-与 Materials Project `max_delta_volume` 对比：
+进一步使用 charge / discharge endpoint crystal structures：
 
 ```text
 R²   ≈ 0.566
@@ -480,60 +276,13 @@ MAE  ≈ 0.0098
 Corr ≈ 0.820
 ```
 
-Residual coverage：
-
-```text
-≤ 0.001 : ~73%
-≤ 0.005 : ~81%
-≤ 0.010 : ~84%
-```
-
-较大残差主要集中在：
-
-```text
-multi-step reactions
-F-rich systems
-V-rich systems
-```
-
-因此 Volume Change 最终采用：
-
-**Endpoint Structure Physics + Residual Analysis**
-
-而不是继续堆叠 composition model 或 Pair-GNN。
+因此最终采用结构物理方法，而不是继续堆模型。
 
 ---
 
-## 11. Property-specific Final Strategy
+## 7. Multi-objective Candidate Screening
 
-最终对不同 target 采用不同策略：
-
-| Property | Final Strategy | Reason |
-|---|---|---|
-| Voltage | XGBoost + Reaction Features | Reaction-dependent property |
-| Capacity | Physics Equation | Determined by stoichiometry |
-| Volume Change | Endpoint Structure Physics | Strong structure dependence |
-| Stability | Screening Constraint | Used for candidate filtering |
-
-因此最终路线不是：
-
-```text
-One Model → Predict Everything
-```
-
-而是：
-
-```text
-ML where ML is useful
-Physics where physics is sufficient
-DFT where higher-fidelity validation is needed
-```
-
----
-
-## 12. Multi-objective Candidate Screening
-
-Candidate Screening 同时考虑：
+筛选同时考虑：
 
 ```text
 Voltage ↑
@@ -542,7 +291,7 @@ Volume Change ↓
 Stability ↓
 ```
 
-主要 application constraints：
+主要约束：
 
 ```text
 3.0 V ≤ predicted voltage ≤ 5.0 V
@@ -552,17 +301,9 @@ max_stability ≤ 0.10 eV/atom
 single-step reaction
 ```
 
-Voltage 使用：
+Voltage 使用 Framework GroupKFold OOF prediction，避免 full-data model 对训练样本自我评分。
 
-**Framework GroupKFold Out-of-Fold prediction**
-
-避免使用 full-data model 对已见样本直接“自我评分”。
-
-随后执行 Pareto Optimization。
-
-![Candidate Screening Funnel](results/figures/candidate_screening_funnel.png)
-
-筛选过程：
+筛选漏斗：
 
 ```text
 1858  Modeling records
@@ -584,24 +325,29 @@ Voltage 使用：
 
 ---
 
-## 13. Uncertainty-aware Screening
+## 8. Uncertainty-aware Screening
 
-为了降低高分候选因 extrapolation 带来的风险，引入：
+为了降低 extrapolation risk，引入：
 
-**Local Empirical Uncertainty**
+```text
+Local Empirical Uncertainty
+```
 
 方法：
 
-1. 在 standardized feature space 中寻找 `k = 20` 个邻近样本
-2. 排除相同 framework
-3. 使用邻居的 OOF absolute residual
-4. 计算 local 90th percentile error：
-
 ```text
-local_q90
+standardized feature space
+        ↓
+k = 20 nearest samples
+        ↓
+exclude same framework
+        ↓
+OOF absolute residuals
+        ↓
+local 90th percentile error
 ```
 
-并构造 conservative voltage estimate：
+定义：
 
 ```text
 Voltage_LCB
@@ -611,17 +357,21 @@ Voltage_OOF
 local_q90
 ```
 
-这里的 uncertainty 是：
+这里的不确定性属于：
 
-**framework-excluded OOF residual based empirical uncertainty**
+```text
+framework-excluded
+OOF residual-based
+empirical uncertainty
+```
 
 不是 Bayesian uncertainty，也不是 conformal prediction。
 
 ---
 
-## 14. DFT Shortlist
+## 9. DFT Shortlist
 
-经过 Pareto、Framework Deduplication 和 Uncertainty Filtering 后，最终 shortlist：
+最终 shortlist：
 
 | Rank | Candidate |
 |---:|---|
@@ -630,7 +380,7 @@ local_q90
 | 3 | MnCr₃(PO₄)₆ |
 | 4 | V₂O₅ |
 
-其中排名第一的 CoPO₄：
+CoPO₄ 主要指标：
 
 ```text
 ML OOF Voltage   ≈ 4.514 V
@@ -646,178 +396,32 @@ Endpoint ΔV/V    ≈ 0.00037
 CoPO4 → LiCoPO4
 ```
 
-进行完整 first-principles validation。
+进行第一性原理验证。
 
 ---
 
-## 15. Quantum ESPRESSO DFT Validation
+## 10. Quantum ESPRESSO DFT Validation
 
-使用：
-
-**Quantum ESPRESSO 7.5**
-
-主要计算设置：
+计算设置：
 
 ```text
-Exchange-correlation: PBE
-Pseudopotentials: SSSP Efficiency
+Quantum ESPRESSO 7.5
+PBE
+spin-polarized
+
 ecutwfc = 70 Ry
 ecutrho = 540 Ry
-Spin-polarized
+
+CoPO4 / LiCoPO4:
+3 × 3 × 3 k-points
+
+Li metal:
+14 × 14 × 14 k-points
+
 vc-relax + final SCF
 ```
 
-### 15.1 Cutoff Convergence
-
-CoPO₄ 测试：
-
-```text
-45 / 50 / 55 / 60 / 65 / 70 / 75 Ry
-```
-
-其中：
-
-```text
-70 → 75 Ry
-ΔE ≈ 1.98 meV/atom
-```
-
-最终采用：
-
-```text
-ecutwfc = 70 Ry
-ecutrho = 540 Ry
-```
-
----
-
-### 15.2 CoPO₄ k-point Convergence
-
-测试：
-
-```text
-2×2×2
-3×3×3
-4×4×4
-```
-
-其中：
-
-```text
-3×3×3 → 4×4×4
-ΔE ≈ 0.044 meV/atom
-```
-
-最终 CoPO₄ / LiCoPO₄ 使用：
-
-```text
-3 × 3 × 3
-```
-
----
-
-### 15.3 Li Metal Reference
-
-Li metal 是 metallic reference，因此单独测试：
-
-```text
-8×8×8
-10×10×10
-12×12×12
-14×14×14
-```
-
-Energy：
-
-```text
-8×8×8    -14.47123154 Ry
-10×10×10 -14.47150752 Ry
-12×12×12 -14.47175658 Ry
-14×14×14 -14.47195990 Ry
-```
-
-其中：
-
-```text
-12×12×12 → 14×14×14
-ΔE ≈ 2.77 meV/atom
-```
-
-最终使用：
-
-```text
-14 × 14 × 14
-```
-
----
-
-## 16. Structure Relaxation and Final Energies
-
-### CoPO₄
-
-`vc-relax`：
-
-```text
-bfgs converged in 25 scf cycles and 24 bfgs steps
-Final enthalpy = -1856.4495854927 Ry
-```
-
-final SCF：
-
-```text
-E(CoPO4 cell)
-= -1856.45435286 Ry
-```
-
-### LiCoPO₄
-
-`vc-relax`：
-
-```text
-bfgs converged in 9 scf cycles and 8 bfgs steps
-Final enthalpy = -1915.4152740409 Ry
-```
-
-final SCF：
-
-```text
-E(LiCoPO4 cell)
-= -1915.41470790 Ry
-```
-
-### Li Metal
-
-优化后 bcc Li：
-
-```text
-Volume ≈ 20.303 Å³ / atom
-a ≈ 3.437 Å
-```
-
-reference energy：
-
-```text
-E(Li)
-= -14.47195990 Ry / atom
-```
-
----
-
-## 17. DFT Voltage
-
-研究反应：
-
-```text
-CoPO4 + Li → LiCoPO4
-```
-
-实际 QE cell：
-
-```text
-Co4P4O16 + 4Li → Li4Co4P4O16
-```
-
-正式总能：
+最终能量：
 
 ```text
 E(CoPO4 cell)
@@ -830,7 +434,7 @@ E(Li metal)
 = -14.47195990 Ry / atom
 ```
 
-得到：
+得到平均电压：
 
 ```text
 DFT-PBE Voltage
@@ -839,226 +443,270 @@ DFT-PBE Voltage
 
 对比：
 
-![DFT Voltage Validation](results/figures/dft_voltage_validation.png)
-
 | Method | Voltage |
 |---|---:|
-| ML OOF | **4.5139 V** |
-| Materials Project | **4.3018 V** |
-| QE-PBE DFT | **3.6481 V** |
+| ML OOF | 4.5139 V |
+| Materials Project | 4.3018 V |
+| QE-PBE DFT | 3.6481 V |
 
-误差：
+这里不能简单理解成“ML 比 DFT 更准确”。
 
-```text
-ML vs MP error  = +0.2120 V
-PBE vs MP error = -0.6538 V
-```
+当前独立 DFT 使用 plain PBE，而 Co-containing transition-metal compounds 涉及 localized 3d electrons。Materials Project 使用更完整的 database-consistent GGA / GGA+U / correction workflow。
 
----
-
-## 18. 如何理解 DFT 与 Materials Project 的差异
-
-不能简单得出：
-
-> “ML 比 DFT 更准确。”
-
-因为三者并不是完全相同的 methodology。
-
-本项目独立 DFT 使用：
-
-```text
-Quantum ESPRESSO + PBE
-```
-
-而 Materials Project 对 transition-metal systems 使用具有 database consistency 的 **GGA / GGA+U + correction workflow**。
-
-CoPO₄ / LiCoPO₄ 涉及 Co 3d redox，plain PBE 对 localized d-electrons 和 redox energetics 存在已知局限。
-
-因此：
+因此本项目将：
 
 ```text
 3.6481 V
 ```
 
-更准确的定位是：
+定位为：
 
-**Independent first-principles sanity check**
+> **Independent first-principles sanity check**
 
-而不是：
+而不是对 Materials Project 的精确复现。
 
-**Exact reproduction of Materials Project**
+---
 
-本项目没有为了让结果“更接近 4.30 V”而人为调整 Hubbard U。
+## 11. pymatgen + ASE Automation
 
-更严格的后续工作可包括：
+为了增强 computational workflow 的自动化和可复现性，项目新增两部分。
+
+### Structure Interoperability
+
+`src/31_ase_structure_bridge.py`
+
+实现：
 
 ```text
-DFT+U sensitivity analysis
-magnetic configuration comparison
-consistent Hubbard projection scheme
-multi-candidate DFT validation
+Materials Project
+        ↓
+pymatgen Structure
+        ↓
+ASE Atoms
+        ↓
+pymatgen Structure
+```
+
+CoPO₄ 验证结果：
+
+```text
+24 atoms
+Formula preserved: True
+Atom count preserved: True
+Periodic cell preserved
+```
+
+### Automated QE Output Parsing
+
+`src/32_qe_output_parser.py`
+
+ASE 直接读取：
+
+```text
+CoPO4_final_scf.out
+LiCoPO4_final_scf.out
+Li_k14.out
+```
+
+自动提取：
+
+```text
+chemical formula
+atom count
+final total energy
+cell volume
+JOB DONE status
+```
+
+解析结果：
+
+```text
+CoPO4
+-25258.34601229 eV
+
+LiCoPO4
+-26060.54243921 eV
+
+Li metal
+-196.90102806 eV
+```
+
+自动计算：
+
+```text
+Reaction ΔE
+= -14.59231467 eV
+
+ΔE / Li
+= -3.64807867 eV
+
+DFT Voltage
+= 3.6481 V
+```
+
+结果与原先人工读取 QE energies 后计算的电压一致。
+
+因此当前 workflow 已从：
+
+```text
+QE output
+→ manually copy energy
+→ Python
+```
+
+升级为：
+
+```text
+QE output
+→ ASE parser
+→ total energy
+→ reaction energy
+→ battery voltage
 ```
 
 ---
 
-## 19. Core Results Summary
-
-| Module | Method | Main Result |
-|---|---|---|
-| Validation | Random CV | R² = 0.5949 |
-| Validation | Framework GroupKFold | R² = 0.4935 |
-| Voltage | XGBoost + Composition | R² = 0.4935 |
-| Voltage | XGBoost + Composition + Reaction | **R² = 0.5302** |
-| Interpretation | SHAP | `relative_delta_li` ranks #2 |
-| Capacity | Physics Equation | **R² = 1.000** |
-| Volume Change | Endpoint Structure Physics | R² ≈ 0.566 |
-| Candidate Screening | Pareto + Uncertainty | 1858 → 4 shortlist |
-| DFT Validation | Quantum ESPRESSO | CoPO₄ → LiCoPO₄ completed |
-
----
-
-## 20. Selected Figures
-
-### Validation Strategy
-
-![Random CV vs Framework GroupKFold](results/figures/random_vs_groupcv.png)
-
-### Voltage Feature Ablation
-
-![Voltage Feature Ablation](results/figures/voltage_feature_ablation.png)
-
-### SHAP Interpretation
-
-![Voltage SHAP Top Features](results/figures/voltage_shap_top_features.png)
-
-### Candidate Screening
-
-![Candidate Screening Funnel](results/figures/candidate_screening_funnel.png)
-
-### DFT Validation
-
-![DFT Voltage Validation](results/figures/dft_voltage_validation.png)
-
----
-
-## 21. Tech Stack
+## 12. Project Structure
 
 ```text
-Python
-Pandas
-NumPy
-Scikit-learn
-XGBoost
-Matminer
-Pymatgen
-SHAP
-PyTorch
-PyTorch Geometric
-Matplotlib
-Materials Project API
-Quantum ESPRESSO
-SSSP pseudopotentials
-```
-
----
-
-## 22. Repository Structure
-
-```text
-battery/
+battery-materials-discovery/
+│
+├── README.md
+├── requirements.txt
+├── requirements-gnn.txt
 │
 ├── data/
 │   ├── raw/
 │   └── processed/
 │
-├── src/
-│   ├── data acquisition
-│   ├── data cleaning
-│   ├── feature engineering
-│   ├── XGBoost modeling
-│   ├── GroupKFold validation
-│   ├── SHAP analysis
-│   ├── GNN experiments
-│   ├── capacity physics
-│   ├── volume physics
-│   ├── Pareto screening
-│   ├── uncertainty analysis
-│   └── DFT validation
-│
 ├── models/
-│
-├── results/
-│   ├── figures/
-│   └── metrics/
+│   └── xgboost_voltage_final.pkl
 │
 ├── dft/
 │   ├── co_po4/
 │   ├── li_copo4/
-│   └── li_metal/
+│   ├── li_metal/
+│   └── pseudo/
 │
-└── README.md
+├── results/
+│   ├── figures/
+│   ├── metrics/
+│   └── qe_parser/
+│
+└── src/
+    ├── 01–09   Data + XGBoost
+    ├── 10–14   GNN exploration
+    ├── 15–17   Reaction features + SHAP
+    ├── 18–22   Physics analysis
+    ├── 23–24   Pareto + uncertainty
+    ├── 25–30   DFT validation + visualization
+    ├── 31_ase_structure_bridge.py
+    └── 32_qe_output_parser.py
 ```
 
 ---
 
-## 23. Limitations
+## Reproducibility
 
-当前项目仍存在以下限制：
+Main environment:
 
-- Dataset size 约 1.8k，framework-level generalization 仍有限
-- Voltage GroupKFold R² 约 0.53，仍有提升空间
-- GNN 只验证了 single-structure representation
-- Volume Change 对 multi-step reactions 的描述仍不完整
-- Uncertainty 是 empirical local residual estimation，不是严格 probabilistic uncertainty
-- DFT 当前只完整验证 1 个 candidate
-- DFT 使用 PBE，没有系统开展 DFT+U / magnetic ordering study
+```bash
+pip install -r requirements.txt
+```
 
----
-
-## 24. Future Work
-
-后续方向：
+主要依赖：
 
 ```text
-DFT+U sensitivity analysis
-Magnetic configuration study
-Reaction graph / pair-structure GNN
-Calibrated uncertainty
-Multi-candidate DFT validation
-Experimental candidate verification
-Active learning
+numpy
+pandas
+scikit-learn
+xgboost
+shap
+matminer
+pymatgen
+mp-api
+ase==3.29.0
+```
+
+Materials Project API：
+
+```bash
+export MP_API_KEY="YOUR_MATERIALS_PROJECT_API_KEY"
+```
+
+运行 ASE structure bridge：
+
+```bash
+python src/31_ase_structure_bridge.py
+```
+
+解析 QE results：
+
+```bash
+python src/32_qe_output_parser.py
 ```
 
 ---
 
-## 25. 项目结论
+## Limitations
 
-本项目最终形成了一条完整的 Li-ion cathode screening workflow：
+当前项目仍有明确边界：
+
+- Materials Project 数据并非真实电池实验数据
+- Voltage GroupKFold R² ≈ 0.53，仍存在较大 unexplained variance
+- 当前 uncertainty 是 empirical residual uncertainty
+- GNN 仅作为 exploratory experiment
+- 目前只对一个 shortlist candidate 完成完整 DFT validation
+- CoPO₄ / LiCoPO₄ 当前使用 plain PBE，没有进一步进行 DFT+U sensitivity analysis
+- ASE 当前用于 structure interoperability 和 QE output parsing，并未声称整个 QE 计算提交过程都由 ASE 自动执行
+
+---
+
+## What This Project Demonstrates
 
 ```text
-Materials Project
-        ↓
-Domain-aware Dataset
-        ↓
-Framework-aware ML
-        ↓
+Materials Informatics
+Domain-aware Validation
+XGBoost
+SHAP
 Reaction Feature Engineering
-        ↓
-Physics-based Property Analysis
-        ↓
+Crystal Structure Processing
+Physics-based Modeling
 Pareto Optimization
-        ↓
 Uncertainty-aware Screening
-        ↓
+pymatgen
+ASE
+Quantum ESPRESSO
 DFT Validation
+Automated Scientific Workflow
 ```
 
-项目最重要的结论不是“哪个模型最好”，而是：
+### Interview Summary
 
-> **材料性能预测应该根据具体 property 的物理来源选择合适的方法，而不是为了使用 Machine Learning 而强行建立模型。**
+> **我从 Materials Project 获取锂电正极材料数据，通过 framework-aware validation 降低材料数据库中的数据泄漏风险，并利用 XGBoost、reaction features 和 SHAP 建立电压模型。对于容量和体积变化，则根据物理机制分别采用理论公式和 endpoint crystal structures，而不是强行使用机器学习。随后通过 Pareto 和局部经验不确定性筛选 DFT 候选，并使用 Quantum ESPRESSO 对 CoPO₄ → LiCoPO₄ 完成第一性原理验证。最后通过 pymatgen 和 ASE 实现晶体结构互操作和 QE 输出自动解析，将 ML、材料物理与 DFT 串成完整的材料筛选 workflow。**
 
-最终实现了：
+---
 
-**Database-level screening → Candidate-level first-principles validation**
+## Core Takeaway
 
-的完整闭环。
+> **Materials discovery is not simply a machine-learning problem.**
+
+更实用的路线是：
+
+```text
+Data
++
+Domain Knowledge
++
+Machine Learning
++
+Physics
++
+Uncertainty
++
+First-principles Calculation
+```
+
+最终目标不是预测所有材料，而是：
+
+> **Reduce the search space and prioritize the next high-value calculation or experiment.**
