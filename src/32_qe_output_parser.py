@@ -106,7 +106,7 @@ def read_qe_result(
         "energy_eV": energy_ev,
         "volume_A3": volume,
         "job_done": finished,
-        "output_file": str(output_file),
+        "output_file": str(output_file.relative_to(PROJECT_ROOT)),
     }
 
 
